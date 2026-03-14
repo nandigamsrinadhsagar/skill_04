@@ -1,156 +1,140 @@
-package com.experiment.di;
+# Experiment 4 – Spring Dependency Injection: Constructor & Setter Injection
 
-import com.experiment.di.model.Student;
-import org.junit.jupiter.api.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
-import org.springframework.test.web.servlet.MockMvc;
+## Overview
+Demonstrates Spring IoC container injecting values into a `Student` POJO using both **Constructor Injection** and **Setter Injection**, configured via **XML** and **Java `@Configuration`**.
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+---
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class DIApplicationTests {
+## Project Structure
+```
+src/main/
+├── java/com/experiment/di/
+│   ├── DIApplication.java                # Entry point – Tasks 5 & 6
+│   ├── model/
+│   │   └── Student.java                  # Tasks 1, 2, 3 – POJO with constructor + setters
+│   ├── config/
+│   │   └── AppConfig.java                # Task 4b – @Configuration beans
+│   └── runner/
+│       └── DemoController.java           # REST endpoints for browser/Postman demo
+└── resources/
+    ├── applicationContext.xml            # Task 4a – XML bean definitions
+    └── application.properties
+```
 
-    @Autowired ApplicationContext context;
-    @Autowired MockMvc            mockMvc;
+---
 
-    // ── Task 5: XML container loads ───────────────────────────────
+## Task Reference
 
-    @Test @Order(1)
-    void xmlContextLoads() {
-        try (ClassPathXmlApplicationContext xml =
-                     new ClassPathXmlApplicationContext("applicationContext.xml")) {
-            assertThat(xml).isNotNull();
-            assertThat(xml.containsBean("studentConstructor")).isTrue();
-            assertThat(xml.containsBean("studentSetter")).isTrue();
-            assertThat(xml.containsBean("studentMixed")).isTrue();
-        }
-    }
+| Task | Location | Detail |
+|---|---|---|
+| 1 | `Student.java` | Fields: `studentId`, `name`, `course`, `year` |
+| 2 | `Student.java` | All-args constructor |
+| 3 | `Student.java` | `setStudentId()`, `setName()`, `setCourse()`, `setYear()` |
+| 4a (XML) | `applicationContext.xml` | `<constructor-arg>` and `<property>` tags |
+| 4b (Annotation) | `AppConfig.java` | `@Configuration` + `@Bean` factory methods |
+| 5 | `DIApplication.java` | `ClassPathXmlApplicationContext` + `SpringApplication.run()` |
+| 6 | `DIApplication.java` CommandLineRunner | `context.getBean()` + `student.display()` |
 
-    // ── Task 6: XML constructor injection ────────────────────────
+---
 
-    @Test @Order(2)
-    void xmlConstructorInjection_valuesAreCorrect() {
-        try (ClassPathXmlApplicationContext xml =
-                     new ClassPathXmlApplicationContext("applicationContext.xml")) {
-            Student s = (Student) xml.getBean("studentConstructor");
-            assertThat(s.getStudentId()).isEqualTo("STU-XML-01");
-            assertThat(s.getName()).isEqualTo("Alice Johnson");
-            assertThat(s.getCourse()).isEqualTo("Computer Science");
-            assertThat(s.getYear()).isEqualTo(2);
-        }
-    }
+## Injection Styles at a Glance
 
-    // ── Task 6: XML setter injection ──────────────────────────────
+### XML – Constructor Injection
+```xml
+<bean id="studentConstructor" class="com.experiment.di.model.Student">
+    <constructor-arg index="0" type="java.lang.String" value="STU-XML-01"/>
+    <constructor-arg index="1" type="java.lang.String" value="Alice Johnson"/>
+    <constructor-arg index="2" type="java.lang.String" value="Computer Science"/>
+    <constructor-arg index="3" type="int"              value="2"/>
+</bean>
+```
 
-    @Test @Order(3)
-    void xmlSetterInjection_valuesAreCorrect() {
-        try (ClassPathXmlApplicationContext xml =
-                     new ClassPathXmlApplicationContext("applicationContext.xml")) {
-            Student s = (Student) xml.getBean("studentSetter");
-            assertThat(s.getStudentId()).isEqualTo("STU-XML-02");
-            assertThat(s.getName()).isEqualTo("Bob Smith");
-            assertThat(s.getCourse()).isEqualTo("Information Technology");
-            assertThat(s.getYear()).isEqualTo(3);
-        }
-    }
+### XML – Setter Injection
+```xml
+<bean id="studentSetter" class="com.experiment.di.model.Student">
+    <property name="studentId" value="STU-XML-02"/>
+    <property name="name"      value="Bob Smith"/>
+    <property name="course"    value="Information Technology"/>
+    <property name="year"      value="3"/>
+</bean>
+```
 
-    // ── Task 6: XML mixed injection ───────────────────────────────
-
-    @Test @Order(4)
-    void xmlMixedInjection_setterOverridesConstructor() {
-        try (ClassPathXmlApplicationContext xml =
-                     new ClassPathXmlApplicationContext("applicationContext.xml")) {
-            Student s = (Student) xml.getBean("studentMixed");
-            // setter should override constructor value
-            assertThat(s.getCourse()).isEqualTo("Data Science (Hons)");
-        }
-    }
-
-    // ── Task 4b & 5: Annotation context loads ────────────────────
-
-    @Test @Order(5)
-    void annotationContextLoads() {
-        assertThat(context).isNotNull();
-        assertThat(context.containsBean("studentAnnotationConstructor")).isTrue();
-        assertThat(context.containsBean("studentAnnotationSetter")).isTrue();
-        assertThat(context.containsBean("studentAnnotationMixed")).isTrue();
-    }
-
-    // ── Task 6: Annotation constructor injection ──────────────────
-
-    @Test @Order(6)
-    void annotationConstructorInjection_valuesAreCorrect() {
-        Student s = context.getBean("studentAnnotationConstructor", Student.class);
-        assertThat(s.getStudentId()).isEqualTo("STU-ANN-01");
-        assertThat(s.getName()).isEqualTo("David Lee");
-        assertThat(s.getCourse()).isEqualTo("Software Engineering");
-        assertThat(s.getYear()).isEqualTo(3);
-    }
-
-    // ── Task 6: Annotation setter injection ───────────────────────
-
-    @Test @Order(7)
-    void annotationSetterInjection_valuesAreCorrect() {
-        Student s = context.getBean("studentAnnotationSetter", Student.class);
-        assertThat(s.getStudentId()).isEqualTo("STU-ANN-02");
-        assertThat(s.getName()).isEqualTo("Eve Williams");
-        assertThat(s.getCourse()).isEqualTo("Artificial Intelligence");
-        assertThat(s.getYear()).isEqualTo(4);
-    }
-
-    // ── Singleton scope check ─────────────────────────────────────
-
-    @Test @Order(8)
-    void beansAreSingletons() {
-        Student a = context.getBean("studentAnnotationConstructor", Student.class);
-        Student b = context.getBean("studentAnnotationConstructor", Student.class);
-        assertThat(a).isSameAs(b);
-    }
-
-    // ── REST endpoint tests ────────────────────────────────────────
-
-    @Test @Order(9)
-    void endpoint_beans_returns200() throws Exception {
-        mockMvc.perform(get("/di/beans"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.beans").isArray())
-                .andExpect(jsonPath("$.beans.length()").value(3));
-    }
-
-    @Test @Order(10)
-    void endpoint_compare_returns200() throws Exception {
-        mockMvc.perform(get("/di/compare"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.constructorInjection").exists())
-                .andExpect(jsonPath("$.setterInjection").exists());
-    }
-
-    @Test @Order(11)
-    void endpoint_explain_returns200() throws Exception {
-        mockMvc.perform(get("/di/explain"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.task4a_xml").isNotEmpty());
-    }
-
-    @Test @Order(12)
-    void endpoint_beanByName_found() throws Exception {
-        mockMvc.perform(get("/di/beans/studentAnnotationConstructor"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("David Lee"));
-    }
-
-    @Test @Order(13)
-    void endpoint_beanByName_notFound_returns400() throws Exception {
-        mockMvc.perform(get("/di/beans/nonExistentBean"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").isNotEmpty());
-    }
+### Annotation – Constructor Injection
+```java
+@Bean
+public Student studentAnnotationConstructor() {
+    return new Student("STU-ANN-01", "David Lee", "Software Engineering", 3);
 }
+```
+
+### Annotation – Setter Injection
+```java
+@Bean
+public Student studentAnnotationSetter() {
+    Student s = new Student();
+    s.setStudentId("STU-ANN-02");
+    s.setName("Eve Williams");
+    s.setCourse("Artificial Intelligence");
+    s.setYear(4);
+    return s;
+}
+```
+
+---
+
+## Run
+```bash
+mvn spring-boot:run
+```
+Watch the **console** for the bean creation sequence and the formatted Student display table.
+
+**Server:** `http://localhost:8080`
+
+---
+
+## Postman / Browser Endpoints
+
+| URL | Description |
+|---|---|
+| `GET /di/beans` | All 3 annotation-configured beans |
+| `GET /di/beans/studentAnnotationConstructor` | Single bean by name |
+| `GET /di/beans/studentAnnotationSetter` | Single bean by name |
+| `GET /di/beans/studentAnnotationMixed` | Single bean by name |
+| `GET /di/compare` | Side-by-side comparison with pros/cons |
+| `GET /di/explain` | Task-by-task DI explanation |
+| `GET /di/constructor-vs-setter` | Decision guide |
+
+### Sample – GET /di/compare (excerpt)
+```json
+{
+  "constructorInjection": {
+    "xmlElement": "<constructor-arg index=\"0\" value=\"...\"/>",
+    "pros": ["Immutable beans", "Mandatory deps enforced", "Easier unit testing"]
+  },
+  "setterInjection": {
+    "xmlElement": "<property name=\"studentId\" value=\"...\"/>",
+    "pros": ["Optional dependencies", "Easy to read", "Re-injectable"]
+  }
+}
+```
+
+---
+
+## Constructor vs Setter – Quick Guide
+| Use | When |
+|---|---|
+| **Constructor** | Mandatory dependency, want immutability, unit testing |
+| **Setter** | Optional dependency, many configurable properties |
+
+Spring team recommends **Constructor Injection** for mandatory dependencies.
+
+---
+
+## GitHub
+```bash
+git init
+git add .
+git commit -m "Experiment 4: Spring DI – Constructor and Setter Injection"
+git remote add origin <your-repo-url>
+git push -u origin main
+```
